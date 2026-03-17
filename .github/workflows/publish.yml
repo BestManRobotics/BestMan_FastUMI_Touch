@@ -1,0 +1,71 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build_wheels:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install build tools
+        run: |
+          pip install scikit-build-core pybind11 cibuildwheel
+
+      - name: Build wheel for Python ${{ matrix.python_version }}
+        run: |
+          python -m cibuildwheel --output-dir wheelhouse 
+        env:
+          CIBW_ARCHS_LINUX: x86_64
+          CIBW_BUILD: ${{ matrix.python_version == '3.10' && 'cp310-*' || matrix.python_version == '3.11' && 'cp311-*' || 'cp312-*' }}
+          CIBW_BUILD_VERBOSITY: 1
+          # 使用 manylinux_2_34，基于 GLIBC 2.34，兼容 Ubuntu 20.04 (2.31) 和 22.04 (2.35)
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64
+          # 排除预编译库，因为 auditwheel 无法修复不兼容的符号
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: auditwheel repair -w {dest_dir} {wheel} --exclude startouch_python_sdk/libstartouch.so
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-py${{ matrix.python_version }}
+          path: ./wheelhouse/*.whl
+
+  publish_pypi:
+    needs: build_wheels
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: ./dist
+          merge-multiple: true
+
+      - name: Verify wheel tags
+        run: |
+          ls -la ./dist/
+          for wheel in ./dist/*.whl; do
+            echo "Checking: $wheel"
+            # Should show manylinux_2_34_x86_64
+            if [[ "$wheel" == *"manylinux_2_34_x86_64"* ]]; then
+              echo "✅ Correct platform tag: $wheel"
+            else
+              echo "❌ Incorrect platform tag: $wheel"
+              exit 1
+            fi
+          done
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
