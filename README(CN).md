@@ -13,8 +13,8 @@ FastUMITouch 机械臂的 Python SDK，通过 CAN 总线与机械臂通信，提
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/BestManRobotics/BestMan_FastUMI_Touch.git
-cd BestMan_FastUMI_Touch
+git clone https://github.com/BestManRobotics/BestMan_Touch.git
+cd BestMan_Touch
 ```
 
 ### 2. 创建 Conda 环境
