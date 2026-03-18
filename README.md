@@ -33,8 +33,8 @@ FastUMITouch Python SDK is designed to provide a lightweight, high-performance i
 ### 1.clone the git
 
 ```bash
-git clone https://github.com/write-for-bug/FastUMITouch-python-sdk.git
-cd FastUMITouch-python-sdk
+git clone https://github.com/BestManRobotics/BestMan_FastUMI_Touch.git
+cd BestMan_FastUMI_Touch
 ```
 
 ### 2.create a conda environment
